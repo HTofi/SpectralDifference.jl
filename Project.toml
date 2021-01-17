@@ -1,0 +1,10 @@
+name = "SpectralDifference"
+uuid = "61e55162-3bec-48a5-b26d-57f2776962ba"
+authors = ["hassan "]
+version = "0.1.0"
+
+[deps]
+FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
+JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
+LegendrePolynomials = "3db4a2ba-fc88-11e8-3e01-49c72059a882"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
