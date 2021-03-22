@@ -28,10 +28,7 @@ module Meshing1D
     """
         physical_location(ξ::Float64, xₗ::Float64, h::Float64)
 
-    This function takes in the abscissa of a point in the standard element `ξ`,
-    the position of the left boundary of the element in physical space `xₗ` and
-    the element's width in physical space `h`. It then calculates the location
-    of the point in physical space using the relation
+    This function takes in the abscissa of a point in the standard element `ξ`, the position of the left boundary of the element in physical space `xₗ` and the element's width in physical space `h`. It then calculates the location of the point in physical space using the relation
 
     ``x = xₗ + \\frac{1+ξ}{2}h``
     """
@@ -49,8 +46,7 @@ module Meshing1D
     * the total number of mesh elements `N`
     * the order of the computation `n`
 
-    It then outputs an `n`×`N` array containing the abscissas in physical space
-    of all solution points in the computational domain.
+    It then outputs an `n`×`N` array containing the abscissas in physical space of all solution points in the computational domain.
     """
     function regular_mesh(x₀::Float64, x₁::Float64, N::Int64, n::Int64)
 

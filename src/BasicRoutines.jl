@@ -1,5 +1,7 @@
 module BasicRoutines
 
+    using InputParameters
+
     using LinearAlgebra
     using LegendrePolynomials
 

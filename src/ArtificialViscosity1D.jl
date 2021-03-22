@@ -1,7 +1,8 @@
 module ArtificialViscosity1D
 
     using LegendrePolynomials
-    using ..BasicRoutines
+    using Interpolations
+    # using ..BasicRoutines
 
     export modal_sensor, artificial_viscosity, sensor_threshold, global_artificial_viscosity
 
@@ -80,20 +81,26 @@ module ArtificialViscosity1D
     """
         global_artificial_viscosity(U::Array{T,3}, ε₀::T, s₀::T, κ::T, V::Array{T,2}) where T<:Float64
 
-    This function takes as input the global array of conservative variables `U`, the artificial viscosity
-    parameters `ε₀`, `s₀` and `κ`, and the Vandermonde matrix associated to the solution points `V`. It
-    then outputs the global vector of artificial viscosities for all elements in the domain.
+    This function takes as input the global array of conservative variables `U`, the artificial viscosity parameters `ε₀`, `s₀` and `κ`, the solution points in a standard element sₚ, and the Vandermonde matrix associated to the solution points `V`. It then outputs the global array of artificial viscosities for all solution points in the domain.
 
     The sensor variable used is density.
     """
-    function global_artificial_viscosity(U::Array{T,3}, ε₀::T, s₀::T, κ::T, V::Array{T,2}) where T<:Float64
+    function global_artificial_viscosity(U::Array{T,3}, ε₀::T, s₀::T, κ::T, sₚ::Array{T,1}, V::Array{T,2}) where T<:Float64
 
-        _, _, N = size(U)
-        ε = zeros(N)
+        _, n, N = size(U)
+        εₑ = zeros(N) # element-wise constant AV
+        ε = zeros(n, N) # interpolated AV
 
         for i in 1:N
             s = modal_sensor(U[1,:,i], V)
-            ε[i] = artificial_viscosity(s, ε₀, s₀, κ)
+            εₑ[i] = artificial_viscosity(s, ε₀, s₀, κ)
+        end
+
+        # linear interpolation
+        xₚ = sₚ / 2
+        e = extrapolate(interpolate(εₑ, BSpline(Linear())), Line())
+        for j in 1:N, i in 1:n
+            ε[i,j] = e(j + xₚ[i])
         end
 
         return ε

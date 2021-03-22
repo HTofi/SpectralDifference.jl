@@ -1,17 +1,17 @@
 module FluxReconstruction1D
 
-    using ..BasicRoutines
+    using BasicRoutines
     using LinearAlgebra
-    using ..InputParameters
+    using InputParameters
+    using PositivityPreserving
+    using Meshing1D
 
     export local_flux, intercell_flux, right_intercell_flux, global_flux, flux_divergence
 
     """
         local_flux(U::Array{Float64, 1})
 
-    This function takes in the vector of conservative variables U = [ρ, ρu, ρE]
-    at a point and calculates the flux vector F = [ρu, ρu²+p, u(ρE+p)] at the
-    same point.
+    This function takes in the vector of conservative variables U = [ρ, ρu, ρE] at a point and calculates the flux vector F = [ρu, ρu²+p, u(ρE+p)] at the same point.
     """
     function local_flux(U::Array{Float64,1})
 
@@ -30,14 +30,11 @@ module FluxReconstruction1D
     """
         intercell_flux(UL::Array{Float64,1}, UR::Array{Float64,1}, FL::Array{Float64,1})
 
-    This function takes in the vectors of conservative variables to the left and right
-    of an intercell discontinuity, UL and UR respectively, and the flux vector to the
-    left FL, and computes the intercell flux Fᵢ using the Roe Riemann solver.
+    This function takes in the vectors of conservative variables to the left and right of an intercell discontinuity, UL and UR respectively, and the flux vector to the left FL, and computes the intercell flux Fᵢ using the Roe Riemann solver.
 
     No entropy fix is included yet.
 
-    Reference: Riemann Solvers and Numerical Methods for Fluid Dynamics A Practical
-    Introduction, Third Edition by Eleuterio F. Toro.
+    Reference: Riemann Solvers and Numerical Methods for Fluid Dynamics A Practical Introduction, Third Edition by Eleuterio F. Toro.
     """
     function intercell_flux(UL::Array{Float64,1}, UR::Array{Float64,1}, FL::Array{Float64,1})
 
@@ -90,17 +87,14 @@ module FluxReconstruction1D
     """
         global_flux(U::Array{T,3}, Uₗ::Array{T,1}, Uᵣ::Array{T,1}, L::Array{T,2}) where T <: Float64
 
-    This function takes as input the global array of conservative variables `U`, the conservative variable
-    vectors at the left and right boundaries `Uₗ` and `Uᵣ` respectively, and the interpolation matrix `L`
-    which maps variables from solution points to flux points. It outputs the global flux array `F` of size
-    `3*(n+1)*N` where `3` correponds to the three conservative variables, `n+1` is the number of flux
-    points per element, and `N` is the number of elements in the mesh.
+    This function takes as input the global array of conservative variables `U`, the conservative variable vectors at the left and right boundaries `Uₗ` and `Uᵣ` respectively, and the interpolation matrix `L` which maps variables from solution points to flux points. It outputs the global flux array `F` of size `3*(n+1)*N` where `3` correponds to the three conservative variables, `n+1` is the number of flux points per element, and `N` is the number of elements in the mesh.
 
     This function assumes a regular mesh, since `L` is the same for all elements.
     """
     function global_flux(U::Array{T,3}, Uₗ::Array{T,1}, Uᵣ::Array{T,1}, L::Array{T,2}) where T <: Float64
 
         _, n, N = size(U)
+        _, w, _ = standard_element(n)
 
         # global flux array
         F = zeros(3, n+1, N)
@@ -110,14 +104,15 @@ module FluxReconstruction1D
 
         # calculate flux at each point by interpolation
         for j in 1:N
-
             Uf[1,:,j] = L*U[1,:,j]
             Uf[2,:,j] = L*U[2,:,j]
             Uf[3,:,j] = L*U[3,:,j]
+        end
 
-            for i in 1:n+1
-                F[:,i,j] = local_flux(Uf[:,i,j])
-            end
+        preserve_positivity!(U[:,:,:], Uf[:,:,:], w)
+
+        for j in 1:N, i in 1:n+1
+            F[:,i,j] = local_flux(Uf[:,i,j])
         end
 
         # calculate intercell fluxes
@@ -136,14 +131,11 @@ module FluxReconstruction1D
     """
         right_intercell_flux(UL::Array{Float64,1}, UR::Array{Float64,1}, FR::Array{Float64,1})
 
-    This function takes in the vectors of conservative variables to the left and right
-    of an intercell discontinuity, UL and UR respectively, and the flux vector to the
-    right FR, and computes the intercell flux Fᵢ using the Roe Riemann solver.
+    This function takes in the vectors of conservative variables to the left and right of an intercell discontinuity, UL and UR respectively, and the flux vector to the right FR, and computes the intercell flux Fᵢ using the Roe Riemann solver.
 
     No entropy fix is included yet.
 
-    Reference: Riemann Solvers and Numerical Methods for Fluid Dynamics A Practical
-    Introduction, Third Edition by Eleuterio F. Toro.
+    Reference: Riemann Solvers and Numerical Methods for Fluid Dynamics A Practical Introduction, Third Edition by Eleuterio F. Toro.
     """
     function right_intercell_flux(UL::Array{Float64,1}, UR::Array{Float64,1}, FR::Array{Float64,1})
 
@@ -195,10 +187,7 @@ module FluxReconstruction1D
     """
         flux_divergence(F::Array{Float64,3}, D::Array{Float64,2})
 
-    This function takes as input the global flux array `F` and the differentiation matrix `D` that maps
-    the flux points on to the solution points. It then calculates the global flux divergence array of size
-    `nₑ*n*N`, where `nₑ` is the number of equations (i.e number of conservative variables), `n` is the
-    number of solution nodes per standard element, and `N` is the number of elements in the mesh.
+    This function takes as input the global flux array `F` and the differentiation matrix `D` that maps the flux points on to the solution points. It then calculates the global flux divergence array of size `nₑ*n*N`, where `nₑ` is the number of equations (i.e number of conservative variables), `n` is the number of solution nodes per standard element, and `N` is the number of elements in the mesh.
     """
     function flux_divergence(F::Array{Float64,3}, D::Array{Float64,2})
 

@@ -6,30 +6,30 @@ module InputParameters
     const γ = 1.4
 
     # simulation order
-    const nₛ = 5
+    nₛ = 5
 
     # number of elements in mesh
     const N = 100
 
     # shockwave parameters
-    const M = 3.0
+    const M = 1.1
     const ρ₀ = 1.0
     const u₀ = 1.0
     const p₀ = 1.0
     const xₛ = 0.5
 
     # artificial viscosity parameters
-    const ε₀ = 0.011588
+    ε₀ = 0.011588
     const κ = 1.0
     const C = 1.0
-    const s₀ = 1.0
+    s₀ = 1.0
 
     # domain boundaries
     const x₀ = 0.0
     const x₁ = 1.0
 
     # time step
-    const Δt = 0.1
+    Δt = 0.1
     const α = 1.0
 
     """
